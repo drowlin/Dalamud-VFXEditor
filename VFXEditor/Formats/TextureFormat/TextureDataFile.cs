@@ -11,6 +11,7 @@ using TeximpNet.DDS;
 using VfxEditor.FileBrowser;
 using VfxEditor.Formats.TextureFormat.CustomTeximpNet;
 
+
 namespace VfxEditor.Formats.TextureFormat {
     public enum Attribute : uint {
         DiscardPerFrame = 0x1,
@@ -260,16 +261,52 @@ namespace VfxEditor.Formats.TextureFormat {
             }
         }
 
+        private static BCnEncoder.Shared.CompressionFormat TexCompressionFormatToBCCompression(CompressionFormat format)
+        {
+            return format switch
+            {
+                CompressionFormat.BC1a => BCnEncoder.Shared.CompressionFormat.Bc1WithAlpha,
+                CompressionFormat.BC2 => BCnEncoder.Shared.CompressionFormat.Bc2,
+                CompressionFormat.BC3 => BCnEncoder.Shared.CompressionFormat.Bc3,
+                CompressionFormat.BC4 => BCnEncoder.Shared.CompressionFormat.Bc4,
+                CompressionFormat.BC5 => BCnEncoder.Shared.CompressionFormat.Bc5,
+                CompressionFormat.BC6 => BCnEncoder.Shared.CompressionFormat.Bc6U, // or Bc6S? Not that we use BC6 anyway
+                CompressionFormat.BC7 => BCnEncoder.Shared.CompressionFormat.Bc7,
+                _ => BCnEncoder.Shared.CompressionFormat.Unknown
+            };
+        }
+
+        private static void DecompressImage( byte[] data, BinaryWriter writer, int width, int height, TextureFormat tFormat )
+        {
+            var cprFormat = TextureToCompressionFormat( TextureFormat.DXT1 );
+
+            var decoder = new BcDecoder();
+            var stream = new MemoryStream( data, 0, data.Length );
+            var rgbaData = decoder.DecodeRaw( stream, width, height, TexCompressionFormatToBCCompression(cprFormat) );
+
+            var decompressedData = new byte[rgbaData.Length * 4];
+            for( var j = 0; j < rgbaData.Length; j++ )
+            {
+                var color = rgbaData[j];
+                decompressedData[( j * 4 ) + 0] = color.r;
+                decompressedData[( j * 4 ) + 1] = color.g;
+                decompressedData[( j * 4 ) + 2] = color.b;
+                decompressedData[( j * 4 ) + 3] = color.a;
+            }
+
+            writer.Write( decompressedData );
+        }
+
         private static void DecompressDxt1( byte[] data, BinaryWriter writer, int width, int height ) {
-            writer.Write( Squish.DecompressImage( data, width, height, SquishOptions.DXT1 ) );
+            DecompressImage(data, writer, width, height, TextureFormat.DXT1 );
         }
 
         private static void DecompressDxt3( byte[] data, BinaryWriter writer, int width, int height ) {
-            writer.Write( Squish.DecompressImage( data, width, height, SquishOptions.DXT3 ) );
+            DecompressImage( data, writer, width, height, TextureFormat.DXT3 );
         }
 
         private static void DecompressDxt5( byte[] data, BinaryWriter writer, int width, int height ) {
-            writer.Write( Squish.DecompressImage( data, width, height, SquishOptions.DXT5 ) );
+            DecompressImage( data, writer, width, height, TextureFormat.DXT5 );
         }
 
         private static void DecompressBc( byte[] data, BinaryWriter writer, int width, int height, BCnEncoder.Shared.CompressionFormat format ) {
