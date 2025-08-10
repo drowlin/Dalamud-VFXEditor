@@ -1,7 +1,8 @@
+using Dalamud.Bindings.ImGui;
 using Dalamud.Interface;
 using Dalamud.Interface.Utility.Raii;
-using Dalamud.Bindings.ImGui;
 using System;
+using System.Numerics;
 using TeximpNet;
 using VfxEditor.FileBrowser;
 using VfxEditor.Formats.TextureFormat.Ui;
@@ -65,6 +66,14 @@ namespace VfxEditor.Formats.TextureFormat.Textures {
             if( ImGui.BeginPopup( "Edit" ) ) {
                 if( ResizeInput == null && GetPreview() != null ) ResizeInput = [GetPreview().Width, GetPreview().Height];
                 ImGui.SetNextItemWidth( 100f );
+
+                var value_vec = new Vector2( ResizeInput[0], ResizeInput[1] );
+                if( ImGui.InputFloat2( "##Resize", ref value_vec ) )
+                {
+                    ResizeInput[0] = ( int )value_vec.X ;
+                    ResizeInput[1] = ( int )value_vec.Y ;
+                }
+
                 ImGui.InputInt( "##Resize", ref ResizeInput[0] );
                 using( var style = ImRaii.PushStyle( ImGuiStyleVar.ItemSpacing, ImGui.GetStyle().ItemInnerSpacing ) ) {
                     ImGui.SameLine();

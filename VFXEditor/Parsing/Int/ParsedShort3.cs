@@ -1,6 +1,7 @@
 using Dalamud.Bindings.ImGui;
 using System.IO;
 using Int4 = SharpDX.Int4;
+using System.Numerics;
 
 namespace VfxEditor.Parsing.Int {
     public class ParsedShort3 : ParsedInt4 {
@@ -24,7 +25,11 @@ namespace VfxEditor.Parsing.Int {
 
         protected override void DrawBody() {
             var value = Value.ToArray();
-            if( ImGui.InputInt( Name, ref value[0] ) ) {
+            var value_vec = new Vector3( value[0], value[1], value[2] );
+            if( ImGui.InputFloat3( Name, ref value_vec ) ) {
+                value[0] = ( short )value_vec.X;
+                value[1] = ( short )value_vec.Y;
+                value[2] = ( short )value_vec.Z;
                 Update( value );
             }
         }
